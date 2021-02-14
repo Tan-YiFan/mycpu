@@ -3,9 +3,8 @@ module decoder
     import common::*;
     import decode_pkg::*;(
     input instr_t raw_instr,
-    output decoded_instr_t instr,
-    output creg_addr_t srca, srcb, dest,
-    output logic exception_ri,
+    input word_t pcplus4,
+    output decoded_instr_t instr
 );
     localparam type raw_op_t = logic[5:0];
     localparam type raw_func_t = logic[5:0];
@@ -16,7 +15,6 @@ module decoder
     func_t raw_func;
     assign raw_func = raw_instr[5:0];
     creg_addr_t rs, rt, rd;
-    shamt_t shamt;
     assign rs = raw_instr[25:21];
     assign rt = raw_instr[20:15];
     assign rt = raw_instr[14:10];
@@ -28,11 +26,14 @@ module decoder
     decoded_op_t op;
     assign instr.op = op;
     assign instr.ctl = ctl;
-    assign instr.extended_imm = 
-        ctl.zeroext ? 
-        {16'b0, imm} :
-        {{16{imm[15]}}, imm};
-    always_comb begin
+    assign instr.imm = 
+    ctl.jump ? {pcplus4[31:28], raw_instr[25:0], 2'b0 }: 
+    (ctl.shamt_valid ? {27'b0, raw_instr[10:6]} : 
+    (ctl.zeroext ? {16'b0, raw_instr[15:0]} : 
+    {{16{raw_instr[15]}}, raw_instr[15:0]}));
+    logic exception_ri;
+    assign instr.exception_ri = exception_ri;
+    always_comb begin : ctl
         exception_ri = '0;
         ctl = '0;
         op = (decoded_op_t')0;
@@ -390,4 +391,39 @@ module decoder
         endcase
     end
     
+    always_comb begin : srca
+        instr.srca = rs;
+        if (ctl.alufunc == ALU_PASSB) begin
+            instr.srca = 7'b0;
+        end
+        if (ctl.is_bp || ctl.is_sys || exception_ri) begin
+            instr.srca = '0;
+        end
+    end
+
+    always_comb begin : srcb
+        instr.srcb = ctl.alusrc == REGB ? rt : '0;
+        if (ctl.alufunc == ALU_PASSA) begin
+            instr.srcb = 7'b0;
+        end
+        if (ctl.memwrite | ctl.memtoreg) begin
+            instr.srcb = rt;
+        end
+        if (ctl.cp0toreg) begin
+            instr.srcb = rd;
+        end
+        if (ctl.is_bp || ctl.is_sys || exception_ri) begin
+            instr.srcb = '0;
+        end
+    end
+    
+    always_comb begin : dest
+        instr.dest = (raw_op != OP_RT) ? rt : rd;
+        if (ctl.jump | ctl.branch) begin
+            instr.dest = 5'b11111;
+        end
+        if (ctl.cp0write) begin
+            instr.dest = rd;
+        end
+    end
 endmodule

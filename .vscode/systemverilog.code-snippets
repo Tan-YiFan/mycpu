@@ -109,5 +109,17 @@
 			"\t",
 			"end"
 		]
+	},
+	"interface": {
+		"prefix": "interface",
+		"body": [
+			"interface $1();",
+			"\t$0",
+			"endinterface"
+		]
+	},
+	"modport": {
+		"prefix": "modport_my",
+		"body": "modport $1();\n$0"
 	}
 }

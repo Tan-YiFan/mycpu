@@ -38,16 +38,17 @@ package decode_pkg;
     } decoded_op_t;//64 left
     typedef struct packed {
         decoded_op_t op;
-        word_t extended_imm;
+        word_t imm;
+        creg_addr_t srca, srcb, dest;
         control_t ctl;
+        logic exception_ri;
     } decoded_instr_t;
     
     typedef struct packed {
         decoded_instr_t instr;
-        creg_addr_t srca, 
-                    srcb, 
-                    dest;
         logic in_delay_slot;
+        word_t pcplus4;
+        word_t rd1, rd2;
     } decode_data_t;
 
     //  Group: Parameters
