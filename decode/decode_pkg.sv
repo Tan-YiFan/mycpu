@@ -9,7 +9,7 @@ package decode_pkg;
         logic memread, memwrite;
         logic regwrite;
         alusrcb_t alusrc;
-        logic is_branch;
+        logic branch;
         branch_t branch_type;
         logic jump;
         logic jr;
@@ -23,7 +23,10 @@ package decode_pkg;
         logic is_sys;
         logic is_link;
         logic is_multdiv;
-        logic is_eret;
+        // logic is_eret;
+        multicycle_t multicycle_type;
+        logic [1:0] mem_size;
+        mem_t mem_type;
     } control_t;
     typedef enum logic [6: 0] { 
         ADDI, ADDIU, SLTI, SLTIU, ANDI, ORI, XORI, 
@@ -49,6 +52,7 @@ package decode_pkg;
         logic in_delay_slot;
         word_t pcplus4;
         word_t rd1, rd2;
+        logic exception_instr;
     } decode_data_t;
 
     //  Group: Parameters

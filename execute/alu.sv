@@ -5,7 +5,7 @@ module alu
     input alufunc_t alufunc,
     output logic exception_of
 );
-    shamt_t shamt;
+    logic[4:0] shamt;
     assign shamt = a[4:0];
 
     always_comb begin

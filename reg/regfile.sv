@@ -2,7 +2,7 @@
 module regfile 
     import common::*;(
     input logic clk,
-
+    regfile_intf.regfile self
 );
     word_t [CREG_NUM-1:1] regs, regs_nxt;
 
@@ -11,13 +11,15 @@ module regfile
     end
     
     for (genvar i = 1; i < CREG_NUM; i++) begin
-        always_comb @(posedge clk) begin
+        always_comb begin
             regs_nxt[i] = regs[i];
-            if (1) begin
-                regs_nxt[i] = wd;
+            if (self.rfwrite.valid && 
+                self.rfwrite.id == i) begin
+                regs_nxt[i] = self.rfwrite.data;
             end
         end
     end
     
-
+    assign self.src1 = (self.ra1 == '0) ? 32'b0 : regs[self.ra1];
+    assign self.src2 = (self.ra2 == '0) ? 32'b0 : regs[self.ra2];
 endmodule

@@ -16,7 +16,7 @@ module mycpu
 
     //debug
     output word_t debug_wb_pc,
-    output rwen_t debug_wb_rf_wen,
+    output logic[3:0] debug_wb_rf_wen,
     output creg_addr_t debug_wb_rf_wnum,
     output word_t debug_wb_rf_wdata
 );
@@ -27,7 +27,7 @@ module mycpu
     datapath datapath(.clk, .resetn, .ext_int, 
                       .pc(inst_addr), .raw_instr(inst_rdata),
                       .mread, .mwrite, .rfwrite, .rd(data_rdata), .wb_pc(debug_wb_pc),
-                      .i_data_ok, .d_data_ok);
+                      .i_data_ok(inst_data_ok), .d_data_ok(data_data_ok | ~data_req));
     assign inst_req = 1'b1;
     assign inst_wr = 1'b0;
     assign inst_size = 2'b10;
@@ -47,7 +47,7 @@ module mycpu
         endcase
     end
     assign data_addr[27:0] = vaddr[27:0];
-    assign data_wdata = mwrite.wd;
+    assign data_wdata = mwrite.data;
     assign data_size = mwrite.valid ? mwrite.size : mread.size;
     assign debug_wb_rf_wen = {4{rfwrite.valid && (rfwrite.id != '0)}};
     assign debug_wb_rf_wnum = rfwrite.id;

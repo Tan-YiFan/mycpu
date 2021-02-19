@@ -1,0 +1,6 @@
+cd [file dirname [info script]]
+add_files [glob **/*.sv]
+add_files [glob **/*.v]
+add_files [glob **/*.svh]
+add_files [glob **/*/*/*.xci]
+add_files [glob **/*/*.sv]

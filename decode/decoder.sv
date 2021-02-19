@@ -12,12 +12,12 @@ module decoder
     raw_op_t raw_op;
     assign raw_op = raw_instr[31:26];
 
-    func_t raw_func;
+    raw_func_t raw_func;
     assign raw_func = raw_instr[5:0];
     creg_addr_t rs, rt, rd;
     assign rs = raw_instr[25:21];
-    assign rt = raw_instr[20:15];
-    assign rt = raw_instr[14:10];
+    assign rt = raw_instr[20:16];
+    assign rd = raw_instr[15:11];
 
     logic [15:0] imm;
     assign imm = raw_instr[15:0];
@@ -33,10 +33,10 @@ module decoder
     {{16{raw_instr[15]}}, raw_instr[15:0]}));
     logic exception_ri;
     assign instr.exception_ri = exception_ri;
-    always_comb begin : ctl
+    always_comb begin : control_signal
         exception_ri = '0;
         ctl = '0;
-        op = (decoded_op_t')0;
+        op = decoded_op_t'(0);
         unique case(raw_op)
             OP_RT: begin
                 unique case(raw_func)
@@ -75,24 +75,28 @@ module decoder
                         ctl.hiwrite = 1'b1;
                         ctl.lowrite = 1'b1;
                         ctl.is_multdiv = 1'b1;
+                        ctl.multicycle_type = M_DIV;
                     end
                     F_DIVU: begin
                         op = DIVU;
                         ctl.hiwrite = 1'b1;
                         ctl.lowrite = 1'b1;
                         ctl.is_multdiv = 1'b1;
+                        ctl.multicycle_type = M_DIVU;
                     end
                     F_MULT: begin
                         op = MULT;
                         ctl.hiwrite = 1'b1;
                         ctl.lowrite = 1'b1;
-                        is_multdiv = 1'b1;
+                        ctl.is_multdiv = 1'b1;
+                        ctl.multicycle_type = M_MULT;
                     end
                     F_MULTU: begin
                         op = MULTU;
                         ctl.hiwrite = 1'b1;
                         ctl.lowrite = 1'b1;
                         ctl.is_multdiv = 1'b1;
+                        ctl.multicycle_type = M_MULTU;
                     end
                     F_AND: begin
                         op = AND;
@@ -165,13 +169,11 @@ module decoder
                         op = MFHI;
                         ctl.regwrite = 1'b1;
                         ctl.alufunc = ALU_PASSA;
-                        ctl.hitoreg = 1'b1;
                     end
                     F_MFLO: begin
                         op = MFLO;
                         ctl.regwrite = 1'b1;
                         ctl.alufunc = ALU_PASSB;
-                        ctl.lotoreg = 1'b1;
                     end
                     F_MTHI: begin
                         op = MTHI;
@@ -262,24 +264,24 @@ module decoder
             end
             OP_BGEZ: begin
                 unique case (raw_instr[20:16])
-                    `B_BGEZ:  begin
+                    B_BGEZ:  begin
                         op = BGEZ;
                         ctl.branch = 1'b1;
                         ctl.branch_type = T_BGEZ;
                     end  
-                    `B_BLTZ: begin
+                    B_BLTZ: begin
                         op = BLTZ;
                         ctl.branch = 1'b1;
                         ctl.branch_type = T_BLTZ;
                     end   
-                    `B_BGEZAL: begin
+                    B_BGEZAL: begin
                         op = BGEZAL;
                         ctl.branch = 1'b1;
                         ctl.regwrite = 1'b1;
                         ctl.branch_type = T_BGEZ;
                         ctl.is_link = 'b1;
                     end 
-                    `B_BLTZAL: begin
+                    B_BLTZAL: begin
                         op = BLTZAL;
                         ctl.branch = 1'b1;
                         ctl.regwrite = 1'b1;
@@ -317,61 +319,77 @@ module decoder
                 ctl.regwrite = 1'b1;
                 ctl.memread = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b00;
+                ctl.mem_type = MEM_LB;
             end
             OP_LBU: begin
                 op = LBU;
                 ctl.regwrite = 1'b1;
                 ctl.memread = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b00;
+                ctl.mem_type = MEM_LBU;
             end
             OP_LH: begin
                 op = LH;
                 ctl.regwrite = 1'b1;
                 ctl.memread = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b01;
+                ctl.mem_type = MEM_LH;
             end
             OP_LHU: begin
                 op = LHU;
                 ctl.regwrite = 1'b1;
                 ctl.memread = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b01;
+                ctl.mem_type = MEM_LHU;
             end
             OP_LW: begin
                 op = LW;
                 ctl.regwrite = 1'b1;
                 ctl.memread = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b10;
+                ctl.mem_type = MEM_LW;
             end
             OP_SB: begin
                 op = SB;
                 ctl.memwrite = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b00;
+                ctl.mem_type = MEM_SB;
             end
             OP_SH: begin
                 op = SH;
                 ctl.memwrite = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b01;
+                ctl.mem_type = MEM_SH;
             end
             OP_SW: begin
                 op = SW;
                 ctl.memwrite = 1'b1;
                 ctl.alusrc = IMM;
+                ctl.mem_size = 2'b10;
+                ctl.mem_type = MEM_SW;
             end
             OP_PRIV: begin
                 case (raw_instr[25:21])
-                    `C_MFC0: begin
+                    C_MFC0: begin
                         op = MFC0;
                         ctl.alufunc = ALU_PASSA;
                         ctl.regwrite = 1'b1;
                     end 
-                    `C_MTC0: begin
+                    C_MTC0: begin
                         op = MTC0;
                         ctl.cp0write = 1'b1;
                         ctl.alufunc = ALU_PASSB;
                     end
                     default: begin
                         case (raw_instr[5: 0])
-                            `C_ERET: begin
+                            C_ERET: begin
                                 op = ERET;
                                 ctl.is_eret = 1'b1;
                             end
@@ -406,12 +424,12 @@ module decoder
         if (ctl.alufunc == ALU_PASSA) begin
             instr.srcb = 7'b0;
         end
-        if (ctl.memwrite | ctl.memtoreg) begin
+        if (ctl.memwrite | ctl.memread) begin
             instr.srcb = rt;
         end
-        if (ctl.cp0toreg) begin
-            instr.srcb = rd;
-        end
+        // if (ctl.cp0toreg) begin
+        //     instr.srcb = rd;
+        // end
         if (ctl.is_bp || ctl.is_sys || exception_ri) begin
             instr.srcb = '0;
         end
@@ -422,8 +440,8 @@ module decoder
         if (ctl.jump | ctl.branch) begin
             instr.dest = 5'b11111;
         end
-        if (ctl.cp0write) begin
-            instr.dest = rd;
-        end
+        // if (ctl.cp0write) begin
+        //     instr.dest = rd;
+        // end
     end
 endmodule
